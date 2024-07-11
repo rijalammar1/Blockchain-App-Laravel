@@ -11,6 +11,7 @@ use App\Http\Requests\Admin\AddRevisionProjectRequest;
 use App\Http\Requests\Admin\ApproveComitteeRequest;
 use App\Http\Requests\Admin\RejectComitteeRequest;
 use App\Http\Requests\Admin\RejectProjectRequest;
+use App\Services\CampaignService;
 use App\Services\CategoryProjectSubmissionStatusService;
 
 class ProjectManagementController extends Controller
@@ -48,7 +49,7 @@ class ProjectManagementController extends Controller
     public function approveCommittee(string $id, ApproveComitteeRequest $request)
     {
         $validated = $request->validated();
-        // dd($validated);
+        CampaignService::postDataCampaign($validated);
         try {
             DB::beginTransaction();
             ProjectService::approveCommittee($id, $validated);
