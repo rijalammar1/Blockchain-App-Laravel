@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use APIHelper;
 use App\Models\Campaign;
 
 /**
@@ -10,6 +9,18 @@ use App\Models\Campaign;
  */
 class CampaignService
 {
+
+    public static function clearCampaignWalletBalance(Campaign $campaign)
+    {
+        $campaign->wallet->balance = 0;
+        $campaign->wallet->save();
+    }
+
+    public static function updateCampaignStatus(Campaign $campaign, $status)
+    {
+        $campaign->status = $status;
+        $campaign->save();
+    }
     public static function getTokenPriceByCampaignId(string $campaignId)
     {
         $campaign = Campaign::findOrFail($campaignId);
@@ -49,7 +60,7 @@ class CampaignService
 
     public static function getCampaignById(string $id)
     {
-        return Campaign::findOrFail($id);
+        return Campaign::findOrFail($id)->load('project');
     }
 
     public static function getCampaignByIds(array $ids)
@@ -63,50 +74,5 @@ class CampaignService
         $transaction = TransactionService::getTransactionByCode($transactionCode);
         $campaign = Campaign::findOrFail($transaction->campaign_id);
         return $campaign;
-    }
-
-    public static function postDataCampaign(array $data)
-    {
-        $relatedCampaign = CampaignService::getCampaignById($data['campaign_id']);
-        // $transactionCode = self::generateTransactionCode('buy');
-        $totalPrice = $relatedCampaign->price_per_unit * $data['quantity'];
-
-        $postData = [
-            // 'id' => $transactionCode,
-            'projectId' => $relatedCampaign->id,
-            'campaignCode' => auth()->user()->id,
-            //
-            'approvedAmount' => $data['approved_amount'],
-            'offeredTokenAmount' => $data['offered_token_amount'],
-            'pricePerUnit' => 'success',
-            'minimumPurchase' => $data['minimum_purchase'],
-            'maximumPurchase' => $data['maximum_purchase'],
-            'fundraisingPeriodStart' => "null",
-            'fundraisingPeriodEnd' => null,
-            // 'createdAt' => time(),
-            'createdAt' => date('c')
-        ];
-
-        self::postTransaction($postData);
-        AddTokenProcess::dispatch(
-            $relatedCampaign,
-            $transactionCode,
-            $data['quantity'],
-            auth()->user()->id,
-            'buy'
-        )->delay(now()->addSeconds(10));
-
-        self::updateUserBallance(auth()->user()->id, $totalPrice, 'buy');
-        self::updateSoldTokenAmount($relatedCampaign, $data['quantity'], "increment");
-        CampaignService::updateWalletBalanceCampaign($relatedCampaign->id, $totalPrice, 'increase');
-
-        return $transactionCode;
-    }
-
-    private static function postCampaign(array $data)
-    {
-        $data['totalPrice'] = (int) $data['totalPrice'];
-        $res =  APIHelper::httpPost('addCampaign', $data);
-        return $res;
     }
 }

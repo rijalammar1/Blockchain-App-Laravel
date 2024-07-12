@@ -49,7 +49,6 @@ class ProjectManagementController extends Controller
     public function approveCommittee(string $id, ApproveComitteeRequest $request)
     {
         $validated = $request->validated();
-        CampaignService::postDataCampaign($validated);
         try {
             DB::beginTransaction();
             ProjectService::approveCommittee($id, $validated);
